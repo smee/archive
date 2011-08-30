@@ -1,8 +1,7 @@
 (ns archive 
   "Functions to help processing zip archive contents."
   (:use
-    [clojure.contrib.io :only (to-byte-array as-file copy delete-file-recursively)]
-    [android.tools.util :only (find-files)])
+    [clojure.contrib.io :only (to-byte-array as-file copy delete-file-recursively)])
   (:import
     [java.io File ByteArrayInputStream BufferedOutputStream FileOutputStream]
     [java.util.zip ZipInputStream ZipOutputStream ZipEntry ZipFile]))
@@ -62,7 +61,7 @@ returns sequence of results (not lazy)."
   ([zip-file root-dir] (copy-to-zip zip-file root-dir false))
   ([zip-file root-dir move?]
     (let [root (str (unix-path root-dir) \/)
-          files (seq (find-files (as-file root-dir)))]
+          files (seq (->> root-dir as-file file-seq (filter (memfn isFile))))]
       (when files
         (with-open [zip-os (-> zip-file
                              (FileOutputStream.)
