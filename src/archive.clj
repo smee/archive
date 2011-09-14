@@ -19,28 +19,31 @@
 
 (defn get-entries
   "Sequence of name of all entries of a zip archive matching a regular expression."
-  ([^File zipfile] (get-entries zipfile #".*"))
-  ([^File zipfile regex] 
+  ([zipfile] (get-entries zipfile #".*"))
+  ([zipfile regex] 
     (with-open [zf (ZipFile. zipfile)]
       (doall (map (fn [^ZipEntry ze] (.getName ze)) (filter-entries zf regex))))))
 
+
+(defn- process-entries-internal
+  "Run function for every entry (two parameters: entry name and contents as byte-array), 
+returns sequence of results (not lazy), sequential."
+  [mapper zipfile func regex]
+  (with-open [zf (ZipFile. zipfile)]
+    (doall 
+      (mapper #(func (.getName %) (to-byte-array (.getInputStream zf %))) (filter-entries zf regex)))))  
+
 (defn process-entries
   "Run function for every entry (two parameters: entry name and contents as byte-array), 
-returns sequence of results (not lazy)."
+returns sequence of results (not lazy), runs sequentially via map."
   ([zipfile func] (process-entries zipfile func #".*"))
-  ([zipfile func regex]
-    (with-open [zf (ZipFile. zipfile)]
-      (doall 
-        (pmap #(func (.getName %) (to-byte-array (.getInputStream zf %))) (filter-entries zf regex))))))  
+  ([zipfile func regex] (process-entries-internal map zipfile func regex)))
 
-(defn process-entries!
-  "Run function with side effects for every entry (two parameters: entry name and contents as byte-array).
-   Returns nil."
-  ([zipfile func] (process-entries! zipfile func #".*"))
-  ([zipfile func regex]
-    (with-open [zf (ZipFile. zipfile)]
-      (dorun 
-        (pmap #(func (.getName %) (to-byte-array (.getInputStream zf %))) (filter-entries zf regex))))))  
+(defn pprocess-entries
+  "Run function for every entry (two parameters: entry name and contents as byte-array), 
+returns sequence of results (not lazy), runs parallel via pmap."
+  ([zipfile func] (pprocess-entries zipfile func #".*"))
+  ([zipfile func regex] (process-entries-internal pmap zipfile func regex)))  
 
 (defn broken? 
   "Is the given file a broken zip archive?"
@@ -74,3 +77,11 @@ returns sequence of results (not lazy)."
               (copy file zip-os)))
           (when move?
             (delete-file-recursively root-dir)))))))
+
+(defn write-into-zip [outfile name-in-zip in-stream]
+  (with-open [zip-os (-> outfile
+                       (FileOutputStream.)
+                       (BufferedOutputStream.)
+                       (ZipOutputStream.))]
+    (.putNextEntry zip-os (ZipEntry. name-in-zip))
+    (copy in-stream zip-os)))
