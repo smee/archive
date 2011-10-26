@@ -1,7 +1,7 @@
 (ns archive 
   "Functions to help processing zip archive contents."
   (:use
-    [clojure.contrib.io :only (to-byte-array as-file copy delete-file-recursively)])
+    [clojure.contrib.io :only (to-byte-array as-file copy delete-file-recursively output-stream file)])
   (:import
     [java.io File ByteArrayInputStream BufferedOutputStream FileOutputStream]
     [java.util.zip ZipInputStream ZipOutputStream ZipEntry ZipFile]))
@@ -12,6 +12,13 @@
   (with-open [zf (ZipFile. zipfile)]
     (if-let [entry (.getEntry zf filename)]
       (to-byte-array (.getInputStream zf entry)))))
+
+(defn extract-entry-to-file
+  "Extract file from zip, copies contents into file in output directory."
+  [zipfile filename output-dir]
+  (with-open [zf (ZipFile. zipfile)]
+    (if-let [entry (.getEntry zf filename)]
+      (copy (.getInputStream zf entry) (file output-dir filename)))))
 
 (defn- filter-entries [zf regex]
   (filter #(re-matches regex (.getName %))
