@@ -1,10 +1,23 @@
 (ns archive 
   "Functions to help processing zip archive contents."
   (:use
-    [clojure.contrib.io :only (to-byte-array as-file copy delete-file-recursively output-stream file)])
+    [clojure.java.io :only (as-file copy output-stream file)])
   (:import
-    [java.io File ByteArrayInputStream BufferedOutputStream FileOutputStream]
+    [java.io InputStream File ByteArrayInputStream ByteArrayOutputStream BufferedOutputStream FileOutputStream]
     [java.util.zip ZipInputStream ZipOutputStream ZipEntry ZipFile]))
+
+(defn- to-byte-array [^InputStream x]
+  (let [buffer (ByteArrayOutputStream.)]
+    (copy x buffer)
+    (.toByteArray buffer)))
+
+(defn- delete-file-recursively 
+  "FIXME doesn't delete directories reliably, need to sort them children before parents."
+  [dir]
+  (let [all-files (file-seq (as-file dir))
+        files-only (filter #(.isFile %) all-files)
+        dirs-only (filter #(.isDirectory %) all-files)]
+    (doseq [f (concat files-only dirs-only)] (.delete f))))
 
 (defn extract-entry
   "Extract file from zip, returns byte[]."

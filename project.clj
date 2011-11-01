@@ -1,5 +1,4 @@
-(defproject org.clojars.smee/archive "0.1.1"
+(defproject org.clojars.smee/archive "0.2.0-SNAPSHOT"
   :description "FIXME: write"
   :dev-dependencies  [] 
-  :dependencies [[org.clojure/clojure "1.2.1"]
-                 [org.clojure/clojure-contrib "1.2.0"]])
+  :dependencies [[org.clojure/clojure "1.3.0"]])
