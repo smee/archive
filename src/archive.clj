@@ -1,7 +1,8 @@
 (ns archive 
   "Functions to help processing zip archive contents."
   (:use
-    [clojure.java.io :only (as-file copy output-stream file)])
+    [clojure.java.io :only (as-file copy output-stream file)]
+    [org.clojars.smee.seq :only (distinct-by)])
   (:import
     [java.io InputStream File ByteArrayInputStream ByteArrayOutputStream BufferedOutputStream FileOutputStream]
     [java.util.zip ZipInputStream ZipOutputStream ZipEntry ZipFile]))
@@ -48,10 +49,10 @@
 (defn- process-entries-internal
   "Run function for every entry (two parameters: entry name and contents as byte-array), 
 returns sequence of results (not lazy), sequential."
-  [mapper zipfile func regex]
+  [map-fn zipfile func regex]
   (with-open [zf (ZipFile. zipfile)]
     (doall 
-      (mapper #(func (.getName %) (to-byte-array (.getInputStream zf %))) (filter-entries zf regex)))))  
+      (map-fn #(func (.getName %) (to-byte-array (.getInputStream zf %))) (filter-entries zf regex)))))  
 
 (defn process-entries
   "Run function for every entry (two parameters: entry name and contents as byte-array), 
@@ -105,3 +106,25 @@ returns sequence of results (not lazy), runs parallel via pmap."
                        (ZipOutputStream.))]
     (.putNextEntry zip-os (ZipEntry. name-in-zip))
     (copy in-stream zip-os)))
+
+(defn copy-into-zip [outfile names-n-streams]
+  (with-open [zip-os (-> outfile
+                       (FileOutputStream.)
+                       (BufferedOutputStream.)
+                       (ZipOutputStream.))]
+    (doseq [[name stream] names-n-streams]
+      (.putNextEntry zip-os (ZipEntry. (unix-path name)))
+      (copy stream zip-os))))
+
+(defn merge-zip-files [zip1 zip2 outfile]
+  (with-open [zf1 (ZipFile. zip1)
+              zf2 (ZipFile. zip2)
+              all-entries (concat (map (juxt (memfn getName) #(.getInputStream zf1 %)) (enumeration-seq (.entries zf1)))
+                                  (map (juxt (memfn getName) #(.getInputStream zf2 %)) (enumeration-seq (.entries zf2))))]
+    (copy-into-zip outfile all-entries)))
+
+(defn name-only [zipentry]
+  (let [n (unix-path (.getName zipentry))] 
+    (subs n (.lastIndexOf n (int \/)))))
+
+
