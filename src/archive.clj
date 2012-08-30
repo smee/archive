@@ -73,7 +73,7 @@ returns sequence of results (not lazy), runs parallel via pmap."
     false
     (catch Exception e (.printStackTrace e) true)))
 
-(defn- unix-path [path]
+(defn- ^String unix-path [path]
   (.replaceAll path "\\\\" "/"))
 
 (defn- trim-leading-str [s to-trim]
@@ -108,6 +108,7 @@ returns sequence of results (not lazy), runs parallel via pmap."
 
 (defn copy-into-zip [outfile names-n-streams]
   (with-open [zip-os (-> outfile
+                       as-file
                        (FileOutputStream.)
                        (BufferedOutputStream.)
                        (ZipOutputStream.))]
