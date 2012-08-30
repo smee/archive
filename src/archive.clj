@@ -1,8 +1,7 @@
 (ns archive 
   "Functions to help processing zip archive contents."
   (:use
-    [clojure.java.io :only (as-file copy output-stream file)]
-    [org.clojars.smee.seq :only (distinct-by)])
+    [clojure.java.io :only (as-file copy output-stream file)])
   (:import
     [java.io InputStream File ByteArrayInputStream ByteArrayOutputStream BufferedOutputStream FileOutputStream]
     [java.util.zip ZipInputStream ZipOutputStream ZipEntry ZipFile]))
