@@ -1,4 +1,4 @@
-(ns archive 
+(ns org.clojars.smee.archive 
   "Functions to help processing zip archive contents."
   (:use
     [clojure.java.io :only (as-file copy output-stream file)])
@@ -98,20 +98,13 @@ returns sequence of results (not lazy), runs parallel via pmap."
           (when move?
             (delete-file-recursively root-dir)))))))
 
-(defn write-into-zip [outfile name-in-zip in-stream]
-  (with-open [zip-os (-> outfile
-                       (FileOutputStream.)
-                       (BufferedOutputStream.)
-                       (ZipOutputStream.))]
+(defn write-into-zip [out name-in-zip in-stream]
+  (with-open [zip-os (-> out output-stream (ZipOutputStream.))]
     (.putNextEntry zip-os (ZipEntry. name-in-zip))
     (copy in-stream zip-os)))
 
-(defn copy-into-zip [outfile names-n-streams]
-  (with-open [zip-os (-> outfile
-                       as-file
-                       (FileOutputStream.)
-                       (BufferedOutputStream.)
-                       (ZipOutputStream.))]
+(defn copy-into-zip [out names-n-streams]
+  (with-open [zip-os (-> out output-stream (ZipOutputStream.))]
     (doseq [[name stream] names-n-streams]
       (.putNextEntry zip-os (ZipEntry. (unix-path name)))
       (copy stream zip-os))))
